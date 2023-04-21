@@ -1,23 +1,18 @@
+#!/usr/bin/env node
 const { spawn } = require('child_process')
+const path = require('path')
 const player = require('play-sound')()
+const commands = process.argv.slice(2)
 
-const command = process.argv.slice(2)[0]
+console.log(`Time to jam while we wait for "${commands.join(' ')}"`)
+const child = spawn(commands.join(' '), { shell: true, stdio: 'inherit' })
 
-if (command === 'build') {
-  const buildProcess = spawn(command, [], { stdio: 'inherit' })
+// Play music when the commands starts
+const audio = player.play(path.join(__dirname, 'music', 'elevator.mp3'), () => {
+  console.error(`Failed to play music, you will have to jam out some other way`)
+})
 
-  player.play('./test.mp3', (err) => {
-    if (err) {
-      console.log(`Error playing audio file: ${err}`)
-    } else {
-      console.log('Audio file started playing')
-    }
-  })
-
-  buildProcess.on('exit', () => {
-    player.stop()
-    console.log('Audio file stopped playing')
-  })
-} else {
-  console.log(`Command "${command}" not recognized`)
-}
+// Stop music when the commands ends
+child.on('exit', () => {
+  audio.kill()
+})
